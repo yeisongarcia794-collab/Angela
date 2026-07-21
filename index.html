@@ -3,15 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Te Amo - Eres Mi Universo</title>
+    <title>Ángela - Te Amo</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <canvas id="canvas"></canvas>
     <div class="container">
-        <h1 class="title">Te Amo</h1>
-        <p class="subtitle">Eres mi universo</p>
+        <div class="main-content">
+            <div class="rotating-planet">
+                <h1 class="title">
+                    <span class="heart-emoji">💕</span>
+                    Ángela
+                    <span class="heart-emoji">💕</span>
+                </h1>
+            </div>
+            <div class="text-orbit">
+                <p class="orbit-text">Te Amo • Eres mi Universo • Para Siempre • Mi Amor • Te Adoro •</p>
+            </div>
+            <p class="subtitle-small">Eres mi Universo</p>
+        </div>
     </div>
+    
+    <!-- Control de música -->
+    <div class="music-controls">
+        <button id="musicBtn" class="music-btn" title="Activar/Desactivar música">🎵</button>
+    </div>
+    
+    <!-- Audio -->
+    <audio id="bgMusic" loop>
+        <source src="music.mp3" type="audio/mpeg">
+    </audio>
+    
     <script src="script.js"></script>
 </body>
 </html>
