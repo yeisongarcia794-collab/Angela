@@ -36,9 +36,13 @@ window.addEventListener('resize', resizeCanvas);
 
 // Arrays para elementos
 let particles = [];
-let hearts = [];
+let orbitHearts = [];
+let floatingHearts = [];
 let messages = [];
 let shootingStars = [];
+
+// Ángulo de rotación de la órbita
+let orbitAngle = 0;
 
 // Clase para partículas de estrellas
 class Star {
@@ -74,6 +78,44 @@ class Star {
     }
 }
 
+// Clase para corazones en órbita
+class OrbitHeart {
+    constructor(angle, radius) {
+        this.angle = angle;
+        this.radius = radius;
+        this.size = Math.random() * 20 + 15;
+        this.opacity = 0.9;
+    }
+
+    update(centerX, centerY, totalAngle) {
+        this.x = centerX + Math.cos(this.angle + totalAngle) * this.radius;
+        this.y = centerY + Math.sin(this.angle + totalAngle) * this.radius;
+    }
+
+    draw() {
+        ctx.save();
+        
+        // Glow effect
+        ctx.globalAlpha = this.opacity * 0.3;
+        ctx.fillStyle = '#ff1493';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size + 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Corazón principal
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = '#ff1493';
+        drawHeart(this.x, this.y, this.size);
+        
+        // Borde del corazón
+        ctx.strokeStyle = '#ff69b4';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+}
+
 // Clase para estrellas fugaces
 class ShootingStar {
     constructor() {
@@ -81,7 +123,6 @@ class ShootingStar {
         this.y = Math.random() * canvas.height * 0.5;
         this.vx = Math.random() * 5 + 3;
         this.vy = Math.random() * 3 + 1;
-        this.length = Math.random() * 150 + 100;
         this.opacity = 1;
         this.lifetime = Math.random() * 100 + 50;
         this.age = 0;
@@ -98,7 +139,6 @@ class ShootingStar {
         ctx.save();
         ctx.globalAlpha = this.opacity;
         
-        // Crear gradiente para la cola
         const gradient = ctx.createLinearGradient(
             this.x - this.vx * 5, this.y - this.vy * 5,
             this.x, this.y
@@ -113,7 +153,6 @@ class ShootingStar {
         ctx.lineTo(this.x, this.y);
         ctx.stroke();
         
-        // Brillo central
         ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
         ctx.beginPath();
         ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
@@ -127,13 +166,11 @@ class ShootingStar {
     }
 }
 
-// Clase para corazones
-class Heart {
+// Clase para corazones flotantes
+class FloatingHeart {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.startX = x;
-        this.startY = y;
         this.vx = (Math.random() - 0.5) * 3;
         this.vy = Math.random() * -2 - 1;
         this.size = Math.random() * 2 + 0.8;
@@ -147,7 +184,7 @@ class Heart {
     update() {
         this.x += this.vx;
         this.y += this.vy;
-        this.vy += 0.05; // gravedad
+        this.vy += 0.05;
         this.age++;
         this.opacity = 1 - (this.age / this.lifetime);
         this.rotation += this.rotationSpeed;
@@ -174,21 +211,18 @@ function drawHeart(x, y, size) {
     ctx.beginPath();
     ctx.moveTo(x, y + size / 4);
     
-    // Lado izquierdo
     ctx.bezierCurveTo(
         x - size / 2, y - size / 4,
         x - size / 2, y - size / 2,
         x - size / 4, y - size / 2
     );
     
-    // Superior
     ctx.bezierCurveTo(
         x, y - size / 1.2,
         x, y - size / 1.2,
         x, y + size / 4
     );
     
-    // Lado derecho
     ctx.bezierCurveTo(
         x, y - size / 1.2,
         x, y - size / 1.2,
@@ -272,10 +306,24 @@ function initStars() {
     }
 }
 
-// Crear corazones aleatorios
-function createHearts() {
+// Inicializar corazones en órbita
+function initOrbitHearts() {
+    orbitHearts = [];
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const numHearts = 40; // Muchos más corazones
+    const radius = 250;
+    
+    for (let i = 0; i < numHearts; i++) {
+        const angle = (i / numHearts) * Math.PI * 2;
+        orbitHearts.push(new OrbitHeart(angle, radius));
+    }
+}
+
+// Crear corazones aleatorios flotantes
+function createFloatingHearts() {
     if (Math.random() < 0.25) {
-        hearts.push(new Heart(
+        floatingHearts.push(new FloatingHeart(
             Math.random() * canvas.width,
             canvas.height + 50
         ));
@@ -296,7 +344,7 @@ function createShootingStars() {
     }
 }
 
-// Dibujar fondo con degradado del espacio
+// Dibujar fondo
 function drawBackground() {
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
     gradient.addColorStop(0, '#0a0a2e');
@@ -309,16 +357,15 @@ function drawBackground() {
 
 // Animar
 function animate() {
-    // Dibujar fondo
     drawBackground();
     
-    // Actualizar y dibujar estrellas
+    // Estrellas
     particles.forEach(star => {
         star.update();
         star.draw();
     });
     
-    // Crear y dibujar estrellas fugaces
+    // Estrellas fugaces
     createShootingStars();
     shootingStars = shootingStars.filter(star => !star.isDead());
     shootingStars.forEach(star => {
@@ -326,20 +373,26 @@ function animate() {
         star.draw();
     });
     
-    // Crear nuevos corazones
-    createHearts();
+    // Corazones en órbita
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    orbitAngle += 0.01; // Velocidad de rotación
     
-    // Actualizar y dibujar corazones
-    hearts = hearts.filter(heart => !heart.isDead());
-    hearts.forEach(heart => {
+    orbitHearts.forEach(heart => {
+        heart.update(centerX, centerY, orbitAngle);
+        heart.draw();
+    });
+    
+    // Corazones flotantes
+    createFloatingHearts();
+    floatingHearts = floatingHearts.filter(heart => !heart.isDead());
+    floatingHearts.forEach(heart => {
         heart.update();
         heart.draw();
     });
     
-    // Crear nuevos mensajes
+    // Mensajes
     createMessages();
-    
-    // Actualizar y dibujar mensajes
     messages = messages.filter(msg => !msg.isDead());
     messages.forEach(msg => {
         msg.update();
@@ -349,30 +402,24 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
-// Interactividad: crear corazones al hacer clic
+// Interactividad
 canvas.addEventListener('click', (e) => {
     for (let i = 0; i < 8; i++) {
-        hearts.push(new Heart(e.clientX, e.clientY));
+        floatingHearts.push(new FloatingHeart(e.clientX, e.clientY));
     }
     messages.push(new FloatingMessage());
 });
 
-// Interactividad: crear corazones al mover el mouse
-let mouseX = canvas.width / 2;
-let mouseY = canvas.height / 2;
-
 canvas.addEventListener('mousemove', (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    
     if (Math.random() < 0.08) {
-        hearts.push(new Heart(
-            mouseX + (Math.random() - 0.5) * 80,
-            mouseY + (Math.random() - 0.5) * 80
+        floatingHearts.push(new FloatingHeart(
+            e.clientX + (Math.random() - 0.5) * 80,
+            e.clientY + (Math.random() - 0.5) * 80
         ));
     }
 });
 
-// Iniciar animación
+// Iniciar
 initStars();
+initOrbitHearts();
 animate();
