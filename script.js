@@ -8,7 +8,7 @@ let isPlayingMusic = false;
 // Control de música
 musicBtn.addEventListener('click', () => {
     if (isPlayingMusic) {
-        bgMusic.pause();
+        bgMusic.play();
         musicBtn.classList.remove('playing');
         isPlayingMusic = false;
     } else {
